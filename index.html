@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShreeRaj MIT | POS System</title>
+    <title>ShreeRaj MIT | Enterprise Terminal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -11,20 +11,49 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f1f5f9; color: #0f172a; overflow: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .menu-card { transition: all 0.2s ease; border: 1px solid #e2e8f0; }
+        
+        /* Creative Homepage Enhancements */
+        .hero-gradient { 
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            position: relative;
+        }
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: 0;
+        }
+        .float-anim { animation: floating 6s ease-in-out infinite; }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .menu-card { transition: all 0.2s ease; border: 1px solid #e2e8f0; position: relative; }
         .menu-card:hover { transform: translateY(-2px); border-color: #fbbf24; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .menu-card.out-of-stock { opacity: 0.5; grayscale: 1; cursor: not-allowed; pointer-events: none; }
         .table-busy { background: #fffbeb !important; border-color: #fbbf24 !important; color: #b45309; }
         .table-ready { background: #ecfdf5 !important; border-color: #10b981 !important; color: #047857; }
         
-        /* Success Animation */
         @keyframes scaleIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .animate-success { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .kds-card { transition: all 0.3s ease; }
+        .kds-warning { border-color: #ef4444 !important; animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
+    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"></audio>
     <div id="success-overlay" class="fixed inset-0 bg-emerald-600/95 backdrop-blur-md z-[300] hidden flex-col items-center justify-center text-white">
         <div class="bg-white p-8 rounded-full mb-6 shadow-2xl animate-success">
             <i data-lucide="check-circle" class="w-24 h-24 text-emerald-600 fill-current"></i>
@@ -34,38 +63,74 @@
     </div>
 
     <header class="no-print bg-white border-b px-8 py-3 flex justify-between items-center shadow-sm z-50">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="toggleView('home')">
             <div class="bg-amber-500 p-2 rounded-xl shadow-lg shadow-amber-200">
                 <i data-lucide="zap" class="text-white w-5 h-5 fill-current"></i>
             </div>
             <div>
                 <h1 class="font-extrabold text-lg tracking-tight uppercase">ShreeRaj <span class="text-amber-500">MIT</span></h1>
-                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Smart Terminal</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Enterprise Terminal</p>
             </div>
         </div>
 
         <div class="flex items-center gap-6">
+            <button onclick="toggleView('home')" class="font-bold text-sm text-slate-600 hover:text-amber-600">Home</button>
             <button onclick="toggleView('pos')" class="font-bold text-sm text-slate-600 hover:text-amber-600">POS</button>
             <button onclick="toggleView('kds')" class="font-bold text-sm text-slate-600 hover:text-amber-600">Kitchen</button>
             <button onclick="toggleView('admin')" class="font-bold text-sm text-slate-600 hover:text-amber-600">Admin</button>
             <div class="text-right border-l pl-6">
                 <p id="total-revenue" class="text-lg font-black text-emerald-600">₹0</p>
-                <p class="text-[9px] font-bold text-slate-400 uppercase">Gross Sales (Inc. GST)</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Gross Sales</p>
             </div>
         </div>
     </header>
 
-    <main id="view-pos" class="flex-1 flex overflow-hidden p-4 gap-4 no-print">
+    <main id="view-home" class="flex-1 overflow-y-auto bg-slate-50 p-8 custom-scroll">
+        <div class="max-w-6xl mx-auto h-full flex items-center justify-center">
+            <div class="hero-gradient rounded-[3rem] p-12 border border-white shadow-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden w-full">
+                <div class="relative z-10 float-anim">
+                    <span class="bg-amber-500 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-200">System Live</span>
+                    <h2 class="text-7xl font-black tracking-tighter mt-6 mb-6 leading-none">The Future of<br><span class="text-amber-500">Campus Dining.</span></h2>
+                    <p class="text-slate-500 font-medium max-w-md mb-8 text-lg">Streamlined stock, real-time kitchen tracking, and instant UPI reconciliation for the ShreeRaj MIT ecosystem.</p>
+                    <div class="flex gap-4">
+                        <button onclick="toggleView('pos')" class="bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold flex items-center gap-3 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200">
+                            Open POS Terminal <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-6 relative z-10">
+                    <div class="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] border border-white shadow-xl text-center min-w-[180px]">
+                        <div class="bg-amber-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="flame" class="w-5 h-5 text-amber-600"></i>
+                        </div>
+                        <p id="home-busy-count" class="text-5xl font-black text-slate-900">0</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Active Orders</p>
+                    </div>
+                    <div class="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] border border-white shadow-xl text-center min-w-[180px]">
+                        <div class="bg-emerald-100 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="check" class="w-5 h-5 text-emerald-600"></i>
+                        </div>
+                        <p id="home-ready-count" class="text-5xl font-black text-slate-900">0</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase mt-2 tracking-widest">Ready to Pick</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-pos" class="hidden flex-1 flex overflow-hidden p-4 gap-4 no-print">
         <aside class="w-64 flex flex-col gap-3">
-            <h2 class="text-[10px] font-black text-slate-400 uppercase px-1">Floors / Zone A</h2>
+            <h2 class="text-[10px] font-black text-slate-400 uppercase px-1">Floor Management</h2>
             <div id="table-grid" class="flex-1 overflow-y-auto grid grid-cols-4 gap-2 custom-scroll pr-1"></div>
         </aside>
 
         <section class="flex-1 flex flex-col gap-4">
-            <div class="relative bg-white rounded-2xl shadow-sm border p-1">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
-                <input type="text" onkeyup="filterMenu(this.value)" placeholder="Search food items..." 
-                       class="w-full pl-12 pr-4 py-3 outline-none font-medium text-slate-600">
+            <div class="flex gap-4 items-center bg-white rounded-2xl shadow-sm border p-1 pr-4">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
+                    <input type="text" onkeyup="filterMenu(this.value)" placeholder="Search food items..." class="w-full pl-12 pr-4 py-3 outline-none font-medium text-slate-600">
+                </div>
+                <button onclick="toggleStockMode()" id="stock-mode-btn" class="text-[10px] font-black uppercase px-4 py-2 rounded-xl bg-slate-100 text-slate-500">Edit Stock</button>
             </div>
             <div id="menu-area" class="flex-1 overflow-y-auto space-y-8 custom-scroll pr-2 pb-10"></div>
         </section>
@@ -77,7 +142,13 @@
                     <button onclick="closeSidebar()" class="p-2 hover:bg-white rounded-full"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
                 </div>
                 <div class="space-y-3">
-                    <input type="text" id="cust-name" placeholder="Customer Name" class="w-full px-4 py-3 rounded-xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-amber-400 outline-none font-bold text-sm transition-all">
+                    <div class="flex gap-2">
+                        <input type="text" id="cust-name" placeholder="Customer Name" class="flex-1 px-4 py-3 rounded-xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-amber-400 outline-none font-bold text-sm">
+                        <select id="order-type" onchange="updateOrderType(this.value)" class="bg-white px-3 rounded-xl ring-1 ring-slate-200 font-bold text-[10px] uppercase outline-none">
+                            <option value="Dine-in">Dine-in</option>
+                            <option value="Parcel">Parcel</option>
+                        </select>
+                    </div>
                     <div class="flex gap-2">
                         <button onclick="setPayment('Cash')" id="pay-Cash" class="pay-btn flex-1 py-3 rounded-xl border-2 text-[10px] font-black uppercase transition-all bg-white">Cash</button>
                         <button onclick="setPayment('UPI')" id="pay-UPI" class="pay-btn flex-1 py-3 rounded-xl border-2 text-[10px] font-black uppercase transition-all bg-white">UPI</button>
@@ -90,11 +161,14 @@
                 <div class="flex justify-between text-xs font-bold text-slate-400 px-1"><span>Subtotal</span><span id="cart-sub">₹0</span></div>
                 <div class="flex justify-between text-xs font-bold text-slate-400 px-1"><span>GST (5%)</span><span id="cart-gst">₹0</span></div>
                 <div class="flex justify-between items-center pt-2">
-                    <span class="text-slate-900 font-black text-sm uppercase tracking-widest">Total Bill</span>
-                    <span id="cart-total" class="text-3xl font-black text-slate-900">₹0</span>
+                    <span class="text-slate-900 font-black text-sm uppercase tracking-widest">Grand Total</span>
+                    <div class="text-right">
+                        <span id="cart-total" class="text-3xl font-black text-slate-900 block">₹0</span>
+                        <span id="cart-round" class="text-[10px] font-bold text-amber-600 uppercase"></span>
+                    </div>
                 </div>
                 <div id="action-btns" class="grid grid-cols-2 gap-3 mt-4">
-                    <button id="btn-kitchen" onclick="sendToKitchen()" class="bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase">To Kitchen</button>
+                    <button id="btn-kitchen" onclick="sendToKitchen()" class="bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase">Place Order</button>
                     <button id="btn-settle" onclick="checkout()" class="bg-amber-500 text-slate-900 py-4 rounded-2xl font-bold text-xs uppercase shadow-lg shadow-amber-200">Checkout</button>
                 </div>
             </div>
@@ -102,83 +176,124 @@
     </main>
 
     <main id="view-kds" class="hidden flex-1 overflow-y-auto p-8 bg-slate-50 no-print">
-        <h2 class="text-2xl font-black mb-8 flex items-center gap-3"><i data-lucide="chef-hat"></i> LIVE ORDERS</h2>
+        <h2 class="text-2xl font-black mb-8 flex items-center gap-3"><i data-lucide="chef-hat"></i> LIVE KITCHEN MONITOR</h2>
         <div id="kds-grid" class="grid grid-cols-1 md:grid-cols-4 gap-6"></div>
     </main>
 
     <main id="view-admin" class="hidden flex-1 p-8 no-print overflow-y-auto">
         <div class="max-w-4xl mx-auto space-y-8">
-            <h2 class="text-3xl font-black">ShreeRaj MIT Admin</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-3xl border shadow-sm flex flex-col justify-between">
-                    <div><p class="text-xs font-bold text-slate-400 uppercase mb-1">Total Sales (Inc. Tax)</p><p id="stat-sales" class="text-3xl font-black text-emerald-600">₹0</p></div>
+            <h2 class="text-3xl font-black">Admin Dashboard</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Sales</p>
+                    <p id="stat-sales" class="text-2xl font-black text-emerald-600">₹0</p>
                 </div>
-                <button onclick="backupData()" class="bg-slate-900 text-white p-6 rounded-3xl font-black uppercase text-xs hover:bg-slate-800 flex flex-col items-center justify-center gap-3"><i data-lucide="file-text" class="w-6 h-6"></i> Download Backup</button>
-                <button onclick="dailyReset()" class="bg-rose-50 text-rose-600 p-6 rounded-3xl border border-rose-100 font-black uppercase text-xs hover:bg-rose-100">End Day & Reset</button>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Cash Collected</p>
+                    <p id="stat-cash" class="text-2xl font-black text-slate-700">₹0</p>
+                </div>
+                <div class="bg-white p-6 rounded-3xl border shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">UPI Revenue</p>
+                    <p id="stat-upi" class="text-2xl font-black text-blue-600">₹0</p>
+                </div>
+                <button onclick="backupData()" class="bg-slate-900 text-white rounded-3xl font-black uppercase text-[10px] flex flex-col items-center justify-center gap-2"><i data-lucide="download"></i> Backup</button>
             </div>
             <div class="bg-white rounded-3xl border p-8">
-                <h3 class="font-black text-sm uppercase text-slate-400 mb-6 tracking-widest">Recent Transactions</h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-sm uppercase text-slate-400 tracking-widest">Transaction History</h3>
+                    <button onclick="dailyReset()" class="text-rose-500 font-bold text-xs uppercase">Reset All Data</button>
+                </div>
                 <div class="overflow-hidden border-t"><table class="w-full text-left text-sm"><tbody id="recent-trans-list" class="divide-y"></tbody></table></div>
             </div>
         </div>
     </main>
 
     <div id="receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
-        <div class="bg-white w-full max-sm:max-w-xs max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative">
+        <div class="bg-white w-full max-sm:max-w-xs max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
             <div id="printable-area" class="font-mono text-[10px] leading-tight">
                 <div class="text-center mb-4">
                     <h2 class="text-lg font-bold">ShreeRaj MIT</h2>
                     <p>MIT-WPU Campus, Kothrud</p>
-                    <p>GSTIN: 27BKZPS1234F1Z1</p>
                     <p id="rec-time" class="mt-2"></p>
                 </div>
                 <div class="border-y border-dashed py-2 my-2"><div id="rec-info" class="space-y-1"></div></div>
                 <div id="rec-items" class="space-y-1 mb-4"></div>
                 <div class="border-t border-dashed pt-2 space-y-1 text-right">
                     <div class="flex justify-between"><span>Subtotal</span><span id="rec-sub">₹0</span></div>
-                    <div class="flex justify-between"><span>CGST (2.5%)</span><span id="rec-cgst">₹0</span></div>
-                    <div class="flex justify-between"><span>SGST (2.5%)</span><span id="rec-sgst">₹0</span></div>
+                    <div class="flex justify-between"><span>GST (5%)</span><span id="rec-gst">₹0</span></div>
                     <div class="flex justify-between font-bold text-sm pt-1 border-t"><span>GRAND TOTAL</span><span id="rec-total">₹0</span></div>
+                    <div class="text-[8px] text-slate-400 italic">*Rounded off for cash convenience</div>
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-3 mt-6 no-print">
                 <button onclick="window.print()" class="bg-slate-100 py-4 rounded-2xl font-bold text-[10px] uppercase">Print Bill</button>
-                <button onclick="completeSettle()" class="bg-emerald-500 text-white py-4 rounded-2xl font-bold text-[10px] uppercase">New Order</button>
+                <button onclick="completeSettle()" class="bg-emerald-500 text-white py-4 rounded-2xl font-bold text-[10px] uppercase">Complete</button>
             </div>
         </div>
     </div>
 
     <script>
         const MENU_DATA = {
-            "Hot Morning": [{n:"Tea", p:20}, {n:"Special Tea", p:30}, {n:"Coffee", p:40}, {n:"Cream Roll", p:35}],
-            "Chat & Snacks": [{n:"Samosa Chat", p:50}, {n:"Kachori Chat", p:60}, {n:"Bhel", p:40}, {n:"Aloo Chat", p:45}],
-            "Pav Family": [{n:"Pav Bhaji", p:120}, {n:"Wada Pav", p:30}, {n:"Misal Pav", p:90}, {n:"Masala Pav", p:80}],
-            "South Indian": [{n:"Paper Dosa", p:120}, {n:"Masala Dosa", p:140}, {n:"Mysore Dosa", p:150}, {n:"Onion Uttapa", p:130}, {n:"Idli Sambar", p:70}],
-            "Main Sabji": [{n:"Chana Masala", p:180}, {n:"Paneer Masala", p:180}, {n:"Veg Handi", p:180}, {n:"Veg Kolhapuri", p:180}, {n:"Dal Fry", p:120}],
-            "Indian Breads": [{n:"Chapati", p:20}, {n:"Butter Naan", p:40}, {n:"Tandoori Roti", p:25}, {n:"Bun Maska", p:30}],
-            "Rice & Chinese": [{n:"Jeera Rice", p:100}, {n:"Veg Biryani", p:180}, {n:"Veg Manchurian", p:150}, {n:"Hakka Noodles", p:150}, {n:"Fried Rice", p:120}],
-            "Paratha Special": [{n:"Aloo Paratha", p:70}, {n:"Gobi Paratha", p:75}, {n:"Cheese Paratha", p:100}],
-            "Fast Food": [{n:"Pizza", p:200}, {n:"Burger", p:120}, {n:"French Fries", p:100}, {n:"Cheese Sandwich", p:110}],
-            "Beverages": [{n:"Lassi", p:50}, {n:"Cold Drink", p:45}, {n:"Milkshake", p:80}, {n:"Lemonade", p:40}]
+            "Hot Morning": [{n:"Tea", p:20, s:true}, {n:"Special Tea", p:30, s:true}, {n:"Coffee", p:40, s:true}, {n:"Cream Roll", p:35, s:true}],
+            "Chat & Snacks": [{n:"Samosa Chat", p:50, s:true}, {n:"Kachori Chat", p:60, s:true}, {n:"Bhel", p:40, s:true}, {n:"Aloo Chat", p:45, s:true}],
+            "Pav Family": [{n:"Pav Bhaji", p:120, s:true}, {n:"Wada Pav", p:30, s:true}, {n:"Misal Pav", p:90, s:true}, {n:"Masala Pav", p:80, s:true}],
+            "South Indian": [{n:"Paper Dosa", p:120, s:true}, {n:"Masala Dosa", p:140, s:true}, {n:"Mysore Dosa", p:150, s:true}, {n:"Onion Uttapa", p:130, s:true}, {n:"Idli Sambar", p:70, s:true}],
+            "Main Sabji": [{n:"Chana Masala", p:180, s:true}, {n:"Paneer Masala", p:180, s:true}, {n:"Veg Handi", p:180, s:true}, {n:"Veg Kolhapuri", p:180, s:true}, {n:"Dal Fry", p:120, s:true}],
+            "Paratha Special": [{n:"Aloo Paratha", p:70, s:true}, {n:"Gobi Paratha", p:75, s:true}, {n:"Cheese Paratha", p:100, s:true}],
+            "Fast Food": [{n:"Pizza", p:200, s:true}, {n:"Burger", p:120, s:true}, {n:"French Fries", p:100, s:true}, {n:"Cheese Sandwich", p:110, s:true}],
+            "Beverages": [{n:"Lassi", p:50, s:true}, {n:"Cold Drink", p:45, s:true}, {n:"Milkshake", p:80, s:true}, {n:"Lemonade", p:40, s:true}]
         };
 
+        let isStockMode = false;
         let state = {
-            tables: JSON.parse(localStorage.getItem('tr_tables_mit_v3')) || Array.from({length: 54}, (_, i) => ({ id: i+1, busy: false, cart: [], customer: '', pay: 'Cash', upiRef: '', status: 'Pending' })),
-            revenue: parseFloat(localStorage.getItem('tr_rev_mit_v3')) || 0,
-            history: JSON.parse(localStorage.getItem('tr_hist_mit_v3')) || [],
+            tables: JSON.parse(localStorage.getItem('tr_tables_v4')) || Array.from({length: 54}, (_, i) => ({ id: i+1, busy: false, cart: [], customer: '', pay: 'Cash', upiRef: '', status: 'Pending', type: 'Dine-in', startTime: null })),
+            revenue: parseFloat(localStorage.getItem('tr_rev_v4')) || 0,
+            cashRev: parseFloat(localStorage.getItem('tr_cash_v4')) || 0,
+            upiRev: parseFloat(localStorage.getItem('tr_upi_v4')) || 0,
+            history: JSON.parse(localStorage.getItem('tr_hist_v4')) || [],
             activeTable: null
         };
 
-        function init() { renderTables(); renderMenu(); updateStats(); lucide.createIcons(); }
+        function init() { renderTables(); renderMenu(); updateStats(); lucide.createIcons(); setInterval(refreshKDS, 60000); }
 
         function renderTables() {
             const grid = document.getElementById('table-grid');
             grid.innerHTML = state.tables.map(t => `<div onclick="openTable(${t.id})" class="h-14 rounded-xl flex items-center justify-center cursor-pointer font-black border-2 transition-all ${t.busy ? (t.status === 'Ready' ? 'table-ready' : 'table-busy') : 'bg-white border-slate-100'} ${state.activeTable === t.id ? 'ring-4 ring-slate-200' : ''}">${t.id}</div>`).join('');
+            updateHomeStats();
+        }
+
+        function toggleStockMode() {
+            isStockMode = !isStockMode;
+            const btn = document.getElementById('stock-mode-btn');
+            btn.classList.toggle('bg-amber-500');
+            btn.classList.toggle('text-white');
+            btn.innerText = isStockMode ? "Exit Edit" : "Edit Stock";
+            renderMenu();
+        }
+
+        function toggleItemStock(cat, name) {
+            const item = MENU_DATA[cat].find(i => i.n === name);
+            item.s = !item.s;
+            renderMenu();
         }
 
         function renderMenu() {
             const area = document.getElementById('menu-area');
-            area.innerHTML = Object.entries(MENU_DATA).map(([cat, items]) => `<div><h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 flex items-center gap-4">${cat} <div class="h-px flex-1 bg-slate-200"></div></h3><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${items.map(i => `<div onclick="addToCart('${i.n}', ${i.p})" class="menu-card bg-white p-4 rounded-2xl cursor-pointer"><p class="font-bold text-xs text-slate-700">${i.n}</p><p class="text-amber-500 font-black mt-1 text-sm">₹${i.p}</p></div>`).join('')}</div></div>`).join('');
+            area.innerHTML = Object.entries(MENU_DATA).map(([cat, items]) => `
+                <div>
+                    <h3 class="text-[10px] font-black uppercase text-slate-400 mb-4 flex items-center gap-4">${cat} <div class="h-px flex-1 bg-slate-200"></div></h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        ${items.map(i => `
+                            <div onclick="${isStockMode ? `toggleItemStock('${cat}', '${i.n}')` : `addToCart('${i.n}', ${i.p})`}" 
+                                 class="menu-card bg-white p-4 rounded-2xl cursor-pointer ${!i.s ? 'out-of-stock' : ''}">
+                                ${!i.s ? '<span class="absolute top-2 right-2 bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase">Sold Out</span>' : ''}
+                                <p class="font-bold text-xs text-slate-700">${i.n}</p>
+                                <p class="text-amber-500 font-black mt-1 text-sm">₹${i.p}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
         }
 
         function openTable(id) {
@@ -186,13 +301,22 @@
             document.getElementById('pos-sidebar').classList.remove('hidden');
             document.getElementById('active-tid').innerText = id;
             document.getElementById('cust-name').value = t.customer;
+            document.getElementById('order-type').value = t.type;
             setPayment(t.pay); updateCartUI(); renderTables();
         }
 
+        function updateOrderType(val) {
+            const t = state.tables.find(x => x.id === state.activeTable);
+            t.type = val;
+            save();
+        }
+
         function addToCart(n, p) {
-            if(!state.activeTable) return; const t = state.tables.find(x => x.id === state.activeTable);
+            if(!state.activeTable) return; 
+            const t = state.tables.find(x => x.id === state.activeTable);
             if(t.status === 'Ready' || t.status === 'Cooking') return;
-            const item = t.cart.find(x => x.n === n); if(item) item.q++; else t.cart.push({n, p, q: 1});
+            const item = t.cart.find(x => x.n === n); 
+            if(item) item.q++; else t.cart.push({n, p, q: 1});
             updateCartUI();
         }
 
@@ -203,14 +327,17 @@
             
             const sub = t.cart.reduce((a, b) => a + (b.p * b.q), 0);
             const gst = Math.round(sub * 0.05);
+            const rawTotal = sub + gst;
+            const roundedTotal = Math.round(rawTotal / 5) * 5;
+            
             document.getElementById('cart-sub').innerText = "₹" + sub;
             document.getElementById('cart-gst').innerText = "₹" + gst;
-            document.getElementById('cart-total').innerText = "₹" + (sub + gst);
+            document.getElementById('cart-total').innerText = "₹" + roundedTotal;
+            document.getElementById('cart-round').innerText = rawTotal !== roundedTotal ? `Rounded from ₹${rawTotal}` : '';
             
             document.getElementById('btn-kitchen').style.display = (t.status === 'Pending') ? 'block' : 'none';
             document.getElementById('btn-settle').style.display = (t.status !== 'Pending') ? 'block' : 'none';
             
-            // Refresh QR if quantity changes while UPI selected
             if(t.pay === 'UPI') setPayment('UPI');
             save();
         }
@@ -219,14 +346,6 @@
             const t = state.tables.find(x => x.id === state.activeTable);
             t.cart[idx].q += amt; if(t.cart[idx].q <= 0) t.cart.splice(idx, 1);
             updateCartUI();
-        }
-
-        // UPI & GREEN POPUP LOGIC
-        function getUPIUrl(amount) {
-            const upiId = "vedwandile2020@oksbi"; 
-            const name = "Ved Wandile";
-            const note = "ShreeRaj MIT Order";
-            return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
         }
 
         function setPayment(m) {
@@ -238,108 +357,101 @@
             if(m === 'UPI') {
                 upiWrap.classList.remove('hidden');
                 const sub = t.cart.reduce((a, b) => a + (b.p * b.q), 0);
-                const total = sub + Math.round(sub * 0.05);
-                const upiLink = getUPIUrl(total);
+                const total = Math.round((sub + (sub*0.05)) / 5) * 5;
+                const upiLink = `upi://pay?pa=vedwandile2020@oksbi&pn=Ved%20Wandile&am=${total}&cu=INR&tn=MIT%20Order`;
                 
                 upiWrap.innerHTML = `
                     <div class="flex flex-col items-center bg-white p-4 rounded-xl border-2 border-amber-100 mb-2 mt-2">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(upiLink)}" alt="Scan to Pay">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(upiLink)}">
                         <p class="text-[10px] font-black mt-2 text-amber-600 uppercase">Scan ₹${total}</p>
                     </div>
-                    <button onclick="triggerSuccess(${total})" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-emerald-100 mb-2 flex items-center justify-center gap-2">
-                        <i data-lucide="shield-check" class="w-4 h-4"></i> Confirm Received
-                    </button>
-                    <input type="text" id="upi-ref" onkeyup="saveUpiRef(this.value)" placeholder="UPI Ref ID" class="w-full px-4 py-2 rounded-xl border-2 border-amber-100 bg-amber-50 outline-none font-bold text-[10px] text-amber-700">
+                    <button onclick="triggerSuccess(${total})" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg shadow-emerald-100 mb-2">Confirm Received</button>
+                    <input type="text" id="upi-ref" onkeyup="state.tables.find(x=>x.id===${state.activeTable}).upiRef=this.value;save()" placeholder="UPI Ref ID" class="w-full px-4 py-2 rounded-xl border-2 border-amber-100 bg-amber-50 outline-none font-bold text-[10px] text-amber-700">
                 `;
                 document.getElementById('upi-ref').value = t.upiRef || '';
-                lucide.createIcons();
-            } else {
-                upiWrap.classList.add('hidden');
-            }
-        }
-
-        function saveUpiRef(val) {
-            const t = state.tables.find(x => x.id === state.activeTable);
-            t.upiRef = val;
-            save();
+            } else { upiWrap.classList.add('hidden'); }
         }
 
         function triggerSuccess(amt) {
-            const overlay = document.getElementById('success-overlay');
-            document.getElementById('success-amount').innerText = `Received Amount: ₹${amt}`;
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-
-            // Success sound
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
-            audio.play().catch(() => {});
-
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                overlay.classList.remove('flex');
-                checkout(); // Auto open bill
-            }, 2000);
+            document.getElementById('success-amount').innerText = `Amount: ₹${amt}`;
+            document.getElementById('success-overlay').classList.remove('hidden');
+            document.getElementById('success-overlay').classList.add('flex');
+            document.getElementById('snd-success').play().catch(()=>{});
+            setTimeout(() => { document.getElementById('success-overlay').classList.replace('flex','hidden'); checkout(); }, 2000);
         }
 
         function sendToKitchen() {
             const t = state.tables.find(x => x.id === state.activeTable); if(!t.cart.length) return;
-            t.busy = true; t.customer = document.getElementById('cust-name').value || "Guest"; t.status = 'Cooking';
+            t.busy = true; t.customer = document.getElementById('cust-name').value || "Guest"; 
+            t.status = 'Cooking';
+            t.startTime = Date.now(); 
+            // Sound play removed
             save(); renderTables(); updateCartUI();
         }
 
         function checkout() {
             const t = state.tables.find(x => x.id === state.activeTable);
             const sub = t.cart.reduce((a, b) => a + (b.p * b.q), 0);
-            const tax = Math.round(sub * 0.025);
+            const gst = Math.round(sub * 0.05);
+            const total = Math.round((sub + gst) / 5) * 5;
             document.getElementById('rec-time').innerText = new Date().toLocaleString();
-            document.getElementById('rec-info').innerHTML = `<div class="flex justify-between"><span>Table: ${t.id}</span><span>${t.customer}</span></div><div class="flex justify-between uppercase"><span>Payment: ${t.pay}</span><span>${t.upiRef || ''}</span></div>`;
+            document.getElementById('rec-info').innerHTML = `<div class="flex justify-between"><span>Table: ${t.id} (${t.type})</span><span>${t.customer}</span></div><div class="flex justify-between uppercase"><span>Payment: ${t.pay}</span><span>${t.upiRef || ''}</span></div>`;
             document.getElementById('rec-items').innerHTML = t.cart.map(i => `<div class="flex justify-between"><span>${i.n} x${i.q}</span><span>₹${i.p*i.q}</span></div>`).join('');
             document.getElementById('rec-sub').innerText = "₹" + sub;
-            document.getElementById('rec-cgst').innerText = "₹" + tax;
-            document.getElementById('rec-sgst').innerText = "₹" + tax;
-            document.getElementById('rec-total').innerText = "₹" + (sub + (tax*2));
-            document.getElementById('receipt-modal').classList.remove('hidden'); document.getElementById('receipt-modal').classList.add('flex');
+            document.getElementById('rec-gst').innerText = "₹" + gst;
+            document.getElementById('rec-total').innerText = "₹" + total;
+            document.getElementById('receipt-modal').classList.replace('hidden','flex');
         }
 
         function completeSettle() {
             const t = state.tables.find(x => x.id === state.activeTable);
             const sub = t.cart.reduce((a, b) => a + (b.p * b.q), 0);
-            const total = sub + Math.round(sub * 0.05);
+            const total = Math.round((sub + Math.round(sub * 0.05)) / 5) * 5;
+            
             state.revenue += total;
-            state.history.unshift({ time: new Date().toLocaleTimeString(), table: t.id, sub, tax: Math.round(sub * 0.05), total, method: t.pay });
-            t.busy = false; t.cart = []; t.status = 'Pending'; t.customer = ''; t.upiRef = '';
+            if(t.pay === 'Cash') state.cashRev += total; else state.upiRev += total;
+            
+            state.history.unshift({ time: new Date().toLocaleTimeString(), table: t.id, customer: t.customer, total, method: t.pay });
+            t.busy = false; t.cart = []; t.status = 'Pending'; t.customer = ''; t.upiRef = ''; t.startTime = null;
             save(); updateStats(); closeSidebar(); renderTables();
-            document.getElementById('receipt-modal').classList.add('hidden');
-        }
-
-        function backupData() {
-            const date = new Date().toLocaleDateString();
-            let report = `SHREERAJ MIT - GST SALES REPORT (${date})\n--------------------------------\nGross Revenue: ₹${state.revenue}\n\nRecent History:\n`;
-            state.history.forEach(h => report += `[${h.time}] Table ${h.table}: ₹${h.total} (Sub: ${h.sub}, GST: ${h.tax})\n`);
-            const blob = new Blob([report], { type: 'text/plain' });
-            const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
-            link.download = `MIT_GST_Report_${date.replace(/\//g, '-')}.txt`; link.click();
+            document.getElementById('receipt-modal').classList.replace('flex','hidden');
         }
 
         function toggleView(v) {
-            ['pos', 'kds', 'admin'].forEach(view => document.getElementById('view-'+view).classList.add('hidden'));
+            ['home', 'pos', 'kds', 'admin'].forEach(x => document.getElementById('view-'+x).classList.add('hidden'));
             document.getElementById('view-'+v).classList.remove('hidden');
             if(v === 'kds') renderKDS();
             if(v === 'admin') renderRecentList();
         }
 
-        function renderRecentList() {
-            const list = document.getElementById('recent-trans-list');
-            list.innerHTML = state.history.map(h => `<tr class="py-2"><td class="p-3 font-bold">${h.time}</td><td class="p-3">Table ${h.table}</td><td class="p-3 uppercase text-slate-400 font-bold">${h.method}</td><td class="p-3 text-right font-black">₹${h.total}</td></tr>`).join('');
-        }
-
         function renderKDS() {
             const grid = document.getElementById('kds-grid');
             const orders = state.tables.filter(t => t.busy && t.status === 'Cooking');
-            grid.innerHTML = orders.map(t => `<div class="bg-white p-6 rounded-3xl border shadow-sm"><div class="flex justify-between mb-4"><h4 class="text-xl font-bold">Table ${t.id}</h4><span class="text-[9px] bg-slate-100 px-2 py-1 rounded-full uppercase">${t.customer}</span></div><div class="space-y-2 mb-6 text-sm">${t.cart.map(i => `<div class="flex justify-between"><span>${i.n}</span><span>x${i.q}</span></div>`).join('')}</div><button onclick="markReady(${t.id})" class="w-full bg-slate-900 text-white py-2 rounded-xl text-[10px] font-bold uppercase">Ready</button></div>`).join('');
+            grid.innerHTML = orders.map(t => {
+                const elapsed = Math.floor((Date.now() - t.startTime) / 60000);
+                const isLate = elapsed >= 10;
+                return `
+                    <div class="kds-card bg-white p-6 rounded-3xl border-2 shadow-sm ${isLate ? 'kds-warning' : ''}">
+                        <div class="flex justify-between mb-4">
+                            <h4 class="text-xl font-bold">Table ${t.id}</h4>
+                            <span class="text-[10px] font-black ${isLate ? 'text-rose-500' : 'text-slate-400'}">${elapsed}m ago</span>
+                        </div>
+                        <p class="text-[10px] font-bold uppercase text-slate-400 mb-2">${t.type} - ${t.customer}</p>
+                        <div class="space-y-2 mb-6 text-sm">${t.cart.map(i => `<div class="flex justify-between"><span>${i.n}</span><span>x${i.q}</span></div>`).join('')}</div>
+                        <button onclick="markReady(${t.id})" class="w-full bg-slate-900 text-white py-2 rounded-xl text-[10px] font-bold uppercase">Ready</button>
+                    </div>
+                `;
+            }).join('');
         }
 
+        function refreshKDS() { if(!document.getElementById('view-kds').classList.contains('hidden')) renderKDS(); }
+
         function markReady(id) { state.tables.find(t => t.id === id).status = 'Ready'; save(); renderKDS(); renderTables(); }
+
+        function renderRecentList() {
+            const list = document.getElementById('recent-trans-list');
+            list.innerHTML = state.history.map(h => `<tr class="py-2"><td class="p-3 font-bold">${h.time}</td><td class="p-3">Table ${h.table} (${h.customer})</td><td class="p-3 uppercase text-slate-400 font-bold">${h.method}</td><td class="p-3 text-right font-black">₹${h.total}</td></tr>`).join('');
+        }
 
         function filterMenu(q) {
             q = q.toLowerCase();
@@ -347,18 +459,42 @@
         }
 
         function save() {
-            localStorage.setItem('tr_tables_mit_v3', JSON.stringify(state.tables));
-            localStorage.setItem('tr_rev_mit_v3', state.revenue);
-            localStorage.setItem('tr_hist_mit_v3', JSON.stringify(state.history));
+            localStorage.setItem('tr_tables_v4', JSON.stringify(state.tables));
+            localStorage.setItem('tr_rev_v4', state.revenue);
+            localStorage.setItem('tr_cash_v4', state.cashRev);
+            localStorage.setItem('tr_upi_v4', state.upiRev);
+            localStorage.setItem('tr_hist_v4', JSON.stringify(state.history));
+            updateHomeStats();
         }
 
         function updateStats() {
             document.getElementById('total-revenue').innerText = "₹" + Math.round(state.revenue).toLocaleString();
             document.getElementById('stat-sales').innerText = "₹" + Math.round(state.revenue).toLocaleString();
+            document.getElementById('stat-cash').innerText = "₹" + Math.round(state.cashRev).toLocaleString();
+            document.getElementById('stat-upi').innerText = "₹" + Math.round(state.upiRev).toLocaleString();
         }
 
-        function dailyReset() { if(confirm("End day and reset GST logs?")) { localStorage.clear(); location.reload(); } }
+        function updateHomeStats() {
+            const busy = state.tables.filter(t => t.busy && t.status === 'Cooking').length;
+            const ready = state.tables.filter(t => t.busy && t.status === 'Ready').length;
+            document.getElementById('home-busy-count').innerText = busy;
+            document.getElementById('home-ready-count').innerText = ready;
+        }
+
+        function dailyReset() { if(confirm("End shift and reset all data?")) { localStorage.clear(); location.reload(); } }
         function closeSidebar() { document.getElementById('pos-sidebar').classList.add('hidden'); state.activeTable = null; renderTables(); }
+        
+        function backupData() {
+            const date = new Date().toLocaleDateString();
+            let report = `SHREERAJ MIT REPORT (${date})\n------------------\nTotal Sales: ₹${state.revenue}\nCash: ₹${state.cashRev}\nUPI: ₹${state.upiRev}\n\nTransactions:\n`;
+            state.history.forEach(h => {
+                // Updated to include customer name in the backup
+                report += `[${h.time}] Table ${h.table} (Cust: ${h.customer || 'Guest'}): ₹${h.total} (${h.method})\n`;
+            });
+            const blob = new Blob([report], { type: 'text/plain' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+            link.download = `ShiftReport_${date.replace(/\//g, '-')}.txt`; link.click();
+        }
 
         init();
     </script>
